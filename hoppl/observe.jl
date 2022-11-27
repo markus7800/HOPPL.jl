@@ -6,7 +6,7 @@ should evaluate to a literal.
 =#
 
 struct ObserveStatement <: HOPPLExpression
-    address::StringLiteral
+    address::HOPPLExpression # should evaluate to StringLiteral
     dist::HOPPLExpression # should evaluate to dsitribution
     observation::HOPPLExpression
 end

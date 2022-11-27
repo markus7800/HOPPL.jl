@@ -41,12 +41,6 @@ function compile_if(c::Compiler, children::ParserChildren)::IfStatement
             compile_hoppl(c, children[2]),
             compile_hoppl(c, children[3])
         )
-    elseif length(children) == 2
-        return IfStatement(
-            compile_hoppl(c, children[1]),
-            compile_hoppl(c, children[2]),
-            EmptyExpression()
-        )
     else
         error("Invalid number of arguments in if statement.")
     end

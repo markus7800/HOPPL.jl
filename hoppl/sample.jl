@@ -4,7 +4,7 @@ where d should evaluate to a distribution
 =#
 
 struct SampleStatement <: HOPPLExpression
-    address::StringLiteral
+    address::HOPPLExpression # should evaluate to StringLiteral
     dist::HOPPLExpression # should evaluate to distribution
 end
 

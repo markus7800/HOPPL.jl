@@ -68,19 +68,19 @@ end
 
 Base.:(==)(l::Let, r::Let) = (l.v == r.v) && (l.binding == r.binding) && (l.body == r.body)
 
-function desugar(l::Let)::FunctionCall
-    return FunctionCall(InlineFunction(Variable[l.v], l.body), HOPPLExpression[l.binding])
-end
+# function desugar(l::Let)::FunctionCall
+#     return FunctionCall(InlineFunction(Variable[l.v], l.body), HOPPLExpression[l.binding])
+# end
 
 function desugar(letblock::LetBlock)::HOPPLExpression
     block = letblock.block
     body = block[end]
     for statement in reverse(block[1:end-1])
-        body = desugar(Let(Variable("_"), statement, body))
+        body = Let(Variable("_"), statement, body)
     end
 
     for (v, b) in reverse(letblock.args)
-        body = desugar(Let(v, b, body))
+        body = Let(v, b, body)
     end
     return body # if let has no bindings simply return body
 end
