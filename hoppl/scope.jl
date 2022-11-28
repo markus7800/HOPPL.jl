@@ -196,11 +196,13 @@ function scope_program(p::Program)::Program
         body = funcdef.body
         for proc_arg in proc_args
             @assert !(proc_arg.name in PRIMITIVES)
+            @assert isnothing(match(r"0x\d+", proc_arg.name)) # should not contain addresses
             body = scope(proc_arg, 1, body)
         end
         # println("body_args: ", body_args)
         for body_arg in body_args
             @assert !(body_arg.name in procedure_names[i:end]) # forbid recursion
+            @assert isnothing(match(r"0x\d+", body_arg.name)) # should not contain addresses
             @assert !(body_arg.name in PRIMITIVES)
             body = scope(body_arg, 0, body)
         end
@@ -212,6 +214,7 @@ function scope_program(p::Program)::Program
     vars = collet_all_variables(main)
     for v in vars
         @assert !(v.name in PRIMITIVES) # redundant
+        @assert isnothing(match(r"0x\d+", v.name)) # should not contain addresses
         if v.name in procedure_names
             main = scope(v, 1, main)
         else
