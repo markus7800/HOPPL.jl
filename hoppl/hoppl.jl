@@ -25,9 +25,8 @@ end
 
 struct Compiler
     desugar::Bool
-    gs::GenSym
     function Compiler(desugar::Bool)
-        return new(desugar, GenSym())
+        return new(desugar)
     end
 end
 
@@ -87,7 +86,6 @@ end
 struct Program
     procs::Vector{FunctionDeclaration}
     main::HOPPLExpression
-    n_vars::Int
 end
 
 function Base.show(io::IO, p::Program)
@@ -99,7 +97,6 @@ function Base.show(io::IO, p::Program)
     end
     println(io, "Main:")
     println(io, p.main)
-    println(io, "Number of random variables: ", p.n_vars)
 end
 
 include("scope.jl")
@@ -110,25 +107,27 @@ function compile_hoppl_program(c::Compiler, code::String)::Program
     return compile_hoppl_program(c, parse_hoppl(code))
 end
 
+loop_helper = compile_hoppl(Compiler(true), parse_hoppl(loop_helper_code))
+
 function compile_hoppl_program(c::Compiler, p::ParserNode)::Program
     procs = Vector{FunctionDeclaration}()
+    push!(procs, loop_helper)
     for child in p.children[1:end-1]
         proc = compile_hoppl(c, child)
         @assert proc isa FunctionDeclaration
         push!(procs, proc)
     end
     main = compile_hoppl(c, p.children[end])
-    p = Program(procs, main, c.gs.address)
+    p = Program(procs, main)
+    p = scope_program(p)
     return p
 end
 
 function compile_hoppl_program(code::String)::Program
     p = compile_hoppl_program(Compiler(true), code)
-    p = scope_program(p)
     return p
 end
 function compile_hoppl_program(p::ParserNode)::Program
     p = compile_hoppl_program(Compiler(true), p)
-    p = scope_program(p)
     return p
 end

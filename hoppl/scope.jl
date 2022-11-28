@@ -201,7 +201,7 @@ function scope_program(p::Program)::Program
         end
         # println("body_args: ", body_args)
         for body_arg in body_args
-            @assert !(body_arg.name in procedure_names[i:end]) # forbid recursion
+            # @assert !(body_arg.name in procedure_names[i:end]) # forbid recursion
             @assert isnothing(match(r"0x\d+", body_arg.name)) # should not contain addresses
             @assert !(body_arg.name in PRIMITIVES)
             body = scope(body_arg, 0, body)
@@ -222,5 +222,5 @@ function scope_program(p::Program)::Program
         end
     end
 
-    return Program(scoped_procs, main, p.n_vars)
+    return Program(scoped_procs, main)
 end

@@ -28,6 +28,39 @@ function next_linenumber(linear::LinearHOPPL)::Int
     return length(linear.program) + 1
 end
 
+struct LinearHOPPLProgram
+    procs::Dict{String, LinearHOPPL}
+    proc_args::Dict{String, Vector{Variable}}
+    main::LinearHOPPL
+
+    function LinearHOPPLProgram(p::Program)
+        gs = GenSym()
+        linear_main = LinearHOPPL(gs)
+        linearize(p.main, linear_main)
+        procs = Dict{String, LinearHOPPL}() 
+        proc_args = Dict{String, Vector{Variable}}()
+        for proc in p.procs
+            linear_proc = LinearHOPPL(gs)
+            linearize(proc.body, linear_proc)
+            procs[proc.name] = linear_proc
+            proc_args[proc.name] = proc.args
+        end
+
+        return new(procs, proc_args, linear_main)
+    end
+end
+
+function Base.show(io::IO, p::LinearHOPPLProgram)
+    if length(p.procs) > 0
+        println(io, "Procs:")
+        for (name, proc) in p.procs
+            println(io, name, " ", p.proc_args[name], ":")
+            println(io, proc)
+        end
+    end
+    println(io, "Main:")
+    println(io, p.main)
+end
 
 mutable struct Literal <: LinearHOPPLExpression
     l::VarOrLit

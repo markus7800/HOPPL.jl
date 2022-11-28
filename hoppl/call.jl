@@ -36,6 +36,5 @@ function compile_funccall(c::Compiler, head::String, children::ParserChildren)::
 end
 
 function compile_funccall(c::Compiler, head::ParserNode, children::ParserChildren)::FunctionCall
-    error("First argument of call tuple has to be string.")
-    #return FunctionCall(compile_hoppl(c, head), HOPPLExpression[compile_hoppl(c, child) for child in children])
+    return FunctionCall(compile_hoppl(c, head), HOPPLExpression[compile_hoppl(c, child) for child in children])
 end

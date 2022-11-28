@@ -13,5 +13,4 @@ program = compile_hoppl_program(s)
 
 include("evaluator/linearize.jl")
 
-l = LinearHOPPL(GenSym())
-linearize(deepcopy(program.main), l)
+LinearHOPPLProgram(program)

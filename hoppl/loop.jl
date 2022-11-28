@@ -64,3 +64,12 @@ function desugar(loop::LoopStatement)::HOPPLExpression
     end
     return desugar(LetBlock(args, [v]))
 end
+
+loop_helper_code = """defn loop-helper [i c v g]
+  (if (= i c)
+    v
+    (let [vn (g i v)]
+      (loop-helper (+ i 1) c vn g)
+    )  
+  )
+"""
