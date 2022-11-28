@@ -17,6 +17,12 @@ function next!(gs::GenSym)::Address
     return gs.address
 end
 
+function next_var!(gs::GenSym)::Variable
+    gs.address += 1
+    return Variable(sprint(show, gs.address))
+end
+
+
 struct Compiler
     desugar::Bool
     gs::GenSym
@@ -118,11 +124,11 @@ end
 
 function compile_hoppl_program(code::String)::Program
     p = compile_hoppl_program(Compiler(true), code)
-    # p = scope_program(p)
+    p = scope_program(p)
     return p
 end
 function compile_hoppl_program(p::ParserNode)::Program
     p = compile_hoppl_program(Compiler(true), p)
-    # p = scope_program(p)
+    p = scope_program(p)
     return p
 end

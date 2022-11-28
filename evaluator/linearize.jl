@@ -4,6 +4,17 @@ abstract type LinearHOPPLExpression end
 mutable struct LinearHOPPL
     gs::GenSym
     program::Vector{LinearHOPPLExpression}
+    function LinearHOPPL(gs::GenSym)
+        return new(gs, LinearHOPPLExpression[])
+    end
+end
+
+function Base.show(io::IO, linear::LinearHOPPL)
+    print(io, "LinearHOPPL")
+    for (i, exp) in enumerate(linear.program)
+        print(io, "\n")
+        print(io, "$i. ", exp)
+    end
 end
 
 function add!(linear::LinearHOPPL, exp::LinearHOPPLExpression)::Int
@@ -19,6 +30,16 @@ end
 mutable struct Literal <: LinearHOPPLExpression
     l::Union{HOPPLLiteral, Variable}
 end
+
+
+function Base.show(io::IO, exp::Literal)
+    if l isa Variable
+        print(io, "VARIABLE ", exp.l)
+    else
+        print(io, "LITERAL ", exp.l)
+    end
+end
+
 
 function linearize(exp::HOPPLLiteral, linear::LinearHOPPL)
     add!(linear, Literal(exp))
@@ -40,16 +61,25 @@ mutable struct Varbinding <: LinearHOPPLExpression
     end
 end
 
-mutable struct Unbinding <: LinearHOPPLExpression
-    binding::Int
+function Base.show(io::IO, exp::Varbinding)
+    print(io, "BIND ", exp.v)
 end
 
+mutable struct Unbinding <: LinearHOPPLExpression
+    binding::Varbinding
+end
+
+function Base.show(io::IO, exp::Unbinding)
+    print(io, "UNBIND ", exp.binding.v)
+end
+
+
 function linearize(exp::Let, linear::LinearHOPPL)
-    linearize(exp.binding, linear_program)
+    linearize(exp.binding, linear)
     binding = Varbinding(exp.v)
-    linenumber = add!(linear, binding)
-    linearize(exp.body, linear_program) # continuation where we input c
-    unbinding = Unbinding(linenumber)
+    add!(linear, binding)
+    linearize(exp.body, linear) # continuation where we input c
+    unbinding = Unbinding(binding)
     add!(linear, unbinding)
 end
 
@@ -63,6 +93,10 @@ mutable struct Branching <: LinearHOPPLExpression
     end
 end
 
+function Base.show(io::IO, exp::Branching)
+    print(io, "BRANCH ", exp.v, ": ", exp.holds, " - ", exp.otherwise)
+end
+
 mutable struct BranchEnd <: LinearHOPPLExpression
     next::Int
     function BranchEnd()
@@ -70,9 +104,13 @@ mutable struct BranchEnd <: LinearHOPPLExpression
     end
 end
 
+function Base.show(io::IO, exp::BranchEnd)
+    print(io, "ENDBRANCH ", exp.next)
+end
+
 function linearize(exp::IfStatement, linear::LinearHOPPL)
     if !(exp.condition isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.condition, IfStatement(v, exp.holds, exp.otherwise))
         linearize(e, linear)
     else
@@ -95,16 +133,23 @@ mutable struct Call <: LinearHOPPLExpression
     args::Vector{Variable}
 end
 
+function Base.show(io::IO, exp::Call)
+    print(io, "Call ", exp.head, ": ")
+    for arg in exp.args
+        print(io, arg, " ")
+    end
+end
+
 function linearize(exp::FunctionCall, linear::LinearHOPPL)
     if !(exp.head isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.head, FunctionCall(v, exp.args))
         linearize(e, linear)
     else
         if !all(arg isa Variable for arg in exp.args)
             for (i, arg) in enumerate(exp.args)
                 if !(arg isa Variable)
-                    v = next!(linear.gs)
+                    v = next_var!(linear.gs)
                     # exp = deepcopy(exp)
                     exp.args[i] = v
                     e = Let(v, arg, exp)
@@ -118,14 +163,11 @@ function linearize(exp::FunctionCall, linear::LinearHOPPL)
     end
 end
 
-function linearize(exp::InlineFunction, linear::LinearHOPPL)
-end
-
 function linearize(exp::VectorLiteral, linear::LinearHOPPL)
     if !all(el isa Variable for el in exp.v)
         for (i, el) in enumerate(exp.v)
             if !(el isa Variable)
-                v = next!(linear.gs)
+                v = next_var!(linear.gs)
                 # exp = deepcopy(exp)
                 exp.v[i] = v
                 e = Let(v, el, exp)
@@ -144,13 +186,17 @@ mutable struct Sample <: LinearHOPPLExpression
     dist::Variable
 end
 
+function Base.show(io::IO, exp::Sample)
+    print(io, "SAMPLE ", exp.dist, " at ", exp.address)
+end
+
 function linearize(exp::SampleStatement, linear::LinearHOPPL)
     if !(exp.address isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.address, SampleStatement(v, exp.dist))
         linearize(e, linear)
     elseif !(exp.dist isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.dist, SampleStatement(exp.address, v))
         linearize(e, linear)
     else
@@ -164,21 +210,26 @@ mutable struct Observe <: LinearHOPPLExpression
     observation::Variable
 end
 
+function Base.show(io::IO, exp::Observe)
+    print(io, "OBSERVE ", exp.observation, " for ", exp.dist, " at ", exp.address)
+end
+
+
 function linearize(exp::ObserveStatement, linear::LinearHOPPL)
     if !(exp.address isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.address, ObserveStatement(v, exp.dist, exp.observation))
         linearize(e, linear)
     elseif !(exp.dist isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.dist, ObserveStatement(exp.address, v, exp.observation))
         linearize(e, linear)
     elseif !(exp.observation isa Variable)
-        v = next!(linear.gs)
+        v = next_var!(linear.gs)
         e = Let(v, exp.observation, ObserveStatement(exp.address, exp.dist, v))
         linearize(e, linear)
     else
-        add!(linear, ObserveStatement(exp.address, exp.dist, exp.observation))
+        add!(linear, Observe(exp.address, exp.dist, exp.observation))
     end
 end
 

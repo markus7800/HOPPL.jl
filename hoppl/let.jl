@@ -61,7 +61,7 @@ struct Let <: HOPPLExpression
     body::HOPPLExpression
     function Let(v::Variable, binding::HOPPLExpression, body::HOPPLExpression)
         @assert !(v.name in PRIMITIVES) # don't allow to be named like primitive
-        @assert isnothing(match(r"0x\d+", v.name)) # should not contain addresses
+        # @assert isnothing(match(r"0x\d+", v.name)) # should not contain addresses
         return new(v, binding, body)
     end
 end

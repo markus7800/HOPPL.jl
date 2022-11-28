@@ -11,7 +11,7 @@ end
 Base.:(==)(l::SampleStatement, r::SampleStatement) = (l.dist == r.dist)
 
 function print_exp(io::IO, exp::SampleStatement, tab::String="")
-    println(io, tab, "Sample ", exp.address.s)
+    println(io, tab, "Sample ", exp.address)
     print_exp(io, exp.dist, tab*"  ")
 end
 

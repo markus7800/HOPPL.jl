@@ -14,7 +14,7 @@ end
 Base.:(==)(l::ObserveStatement, r::ObserveStatement) = (l.address == r.address) && (l.dist == r.dist) && (l.observation == r.observation)
 
 function print_exp(io::IO, exp::ObserveStatement, tab::String="")
-    println(io, tab, "Observe ", exp.address.s, " ")
+    println(io, tab, "Observe ", exp.address, " ")
     print_exp(io, exp.dist, tab*"  ")
     println(io)
     println(io, tab, "Value")

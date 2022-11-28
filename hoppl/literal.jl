@@ -39,7 +39,7 @@ struct StringLiteral <: HOPPLLiteral
 end
 
 function print_exp(io::IO, exp::StringLiteral, tab::String="")
-    print(io, tab, exp.s)
+    print(io, tab, "'", exp.s, "'")
 end
 
 function to_julia(exp::StringLiteral)
@@ -101,7 +101,7 @@ function compile_hoppl(c::Compiler, s::String)::HOPPLExpression
     catch ArgumentError end
 
     if s[1] == '\'' && s[end] == '\''
-        return StringLiteral(s)
+        return StringLiteral(s[2:end-1])
     else
         return Variable(s)
     end

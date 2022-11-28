@@ -104,11 +104,11 @@ function scope(v::Variable, i::Int, in_exp::IfStatement)::IfStatement
 end
 
 function scope(v::Variable, i::Int, in_exp::ObserveStatement)::ObserveStatement
-    return ObserveStatement(scope(v, i, in_exp.dist), scope(v, i, in_exp.observation))
+    return ObserveStatement(scope(v, i, in_exp.address), scope(v, i, in_exp.dist), scope(v, i, in_exp.observation))
 end
 
 function scope(v::Variable, i::Int, in_exp::SampleStatement)::SampleStatement
-    return SampleStatement(in_exp.address, scope(v, i, in_exp.dist))
+    return SampleStatement(scope(v, i, in_exp.address), scope(v, i, in_exp.dist))
 end
 
 function scope(v::Variable, i::Int, in_exp::VectorLiteral)::VectorLiteral
