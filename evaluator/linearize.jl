@@ -1,6 +1,8 @@
 
 abstract type LinearHOPPLExpression end
 
+const VarOrLit = Union{Variable, HOPPLLiteral}
+
 mutable struct LinearHOPPL
     gs::GenSym
     program::Vector{LinearHOPPLExpression}
@@ -28,12 +30,12 @@ end
 
 
 mutable struct Literal <: LinearHOPPLExpression
-    l::Union{HOPPLLiteral, Variable}
+    l::VarOrLit
 end
 
 
 function Base.show(io::IO, exp::Literal)
-    if l isa Variable
+    if exp.l isa Variable
         print(io, "VARIABLE ", exp.l)
     else
         print(io, "LITERAL ", exp.l)
@@ -85,7 +87,7 @@ end
 
 #(let [v (if true 1 2)] v)
 mutable struct Branching <: LinearHOPPLExpression
-    v::Variable
+    v::VarOrLit
     holds::Int
     otherwise::Int
     function Branching(v::Variable)
@@ -109,7 +111,7 @@ function Base.show(io::IO, exp::BranchEnd)
 end
 
 function linearize(exp::IfStatement, linear::LinearHOPPL)
-    if !(exp.condition isa Variable)
+    if !(exp.condition isa VarOrLit)
         v = next_var!(linear.gs)
         e = Let(v, exp.condition, IfStatement(v, exp.holds, exp.otherwise))
         linearize(e, linear)
@@ -130,7 +132,7 @@ end
 
 mutable struct Call <: LinearHOPPLExpression
     head::Variable
-    args::Vector{Variable}
+    args::Vector{VarOrLit}
 end
 
 function Base.show(io::IO, exp::Call)
@@ -146,9 +148,9 @@ function linearize(exp::FunctionCall, linear::LinearHOPPL)
         e = Let(v, exp.head, FunctionCall(v, exp.args))
         linearize(e, linear)
     else
-        if !all(arg isa Variable for arg in exp.args)
+        if !all(arg isa VarOrLit for arg in exp.args)
             for (i, arg) in enumerate(exp.args)
-                if !(arg isa Variable)
+                if !(arg isa VarOrLit)
                     v = next_var!(linear.gs)
                     # exp = deepcopy(exp)
                     exp.args[i] = v
@@ -182,7 +184,7 @@ end
 
 
 mutable struct Sample <: LinearHOPPLExpression
-    address::Variable
+    address::VarOrLit
     dist::Variable
 end
 
@@ -191,7 +193,7 @@ function Base.show(io::IO, exp::Sample)
 end
 
 function linearize(exp::SampleStatement, linear::LinearHOPPL)
-    if !(exp.address isa Variable)
+    if !(exp.address isa VarOrLit)
         v = next_var!(linear.gs)
         e = Let(v, exp.address, SampleStatement(v, exp.dist))
         linearize(e, linear)
@@ -205,9 +207,9 @@ function linearize(exp::SampleStatement, linear::LinearHOPPL)
 end
 
 mutable struct Observe <: LinearHOPPLExpression
-    address::Variable
+    address::VarOrLit
     dist::Variable
-    observation::Variable
+    observation::VarOrLit
 end
 
 function Base.show(io::IO, exp::Observe)
@@ -216,7 +218,7 @@ end
 
 
 function linearize(exp::ObserveStatement, linear::LinearHOPPL)
-    if !(exp.address isa Variable)
+    if !(exp.address isa VarOrLit)
         v = next_var!(linear.gs)
         e = Let(v, exp.address, ObserveStatement(v, exp.dist, exp.observation))
         linearize(e, linear)
@@ -224,7 +226,7 @@ function linearize(exp::ObserveStatement, linear::LinearHOPPL)
         v = next_var!(linear.gs)
         e = Let(v, exp.dist, ObserveStatement(exp.address, v, exp.observation))
         linearize(e, linear)
-    elseif !(exp.observation isa Variable)
+    elseif !(exp.observation isa VarOrLit)
         v = next_var!(linear.gs)
         e = Let(v, exp.observation, ObserveStatement(exp.address, exp.dist, v))
         linearize(e, linear)
