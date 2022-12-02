@@ -1,4 +1,5 @@
 using Random
+using Statistics
 include("hoppl/hoppl.jl")
 
 s = """(let [z (sample 'z' (bernoulli 0.5))
@@ -28,7 +29,7 @@ geometric = """
         (if b i (geometric p (+ i 1)))
     )
 )
-(geometric 0.5 0)
+(geometric 0.2 0)
 """;
 
 
@@ -40,7 +41,11 @@ e = Evaluator(linear_program, ForwardSampler());
 reset!(e); Random.seed!(4); evaluate(e)
 
 
-# todo fibonacci
+r = infer(program, ForwardSampler(), 1000)
+r = to_julia.(r)
+mean(r)
+(1 - 0.2) / 0.2
+
 
 fib = """
 (defn fib [n]
@@ -59,6 +64,8 @@ linear_program = LinearHOPPLProgram(program)
 e = Evaluator(linear_program, ForwardSampler());
 reset!(e); evaluate(e)
 
+
+infer(program, ForwardSampler(), 10)
 
 #=
 (let [

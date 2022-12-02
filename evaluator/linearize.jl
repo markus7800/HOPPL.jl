@@ -42,6 +42,7 @@ struct LinearHOPPLProgram
     main::LinearHOPPL
 
     function LinearHOPPLProgram(p::Program)
+        p = deepcopy(p)
         gs = GenSym()
         linear_main = LinearHOPPL(gs)
         linearize(p.main, linear_main)

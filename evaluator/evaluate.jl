@@ -8,7 +8,7 @@ end
 
 function sample(sampler::ForwardSampler, address::String, d::Distribution)::Tuple{HOPPLLiteral, Symbol}
     value = sample(d)
-    println("sample ", value)
+    # println("sample ", value)
     return value, :continue
 end
 
@@ -70,6 +70,21 @@ mutable struct Evaluator
     end
 end
 
+function infer(program::Program, sampler::Sampler, N::Int)::Vector{HOPPLLiteral}
+    linear_program = LinearHOPPLProgram(program)
+    return infer(linear_program, sampler, N)
+end
+
+function infer(program::LinearHOPPLProgram, sampler::Sampler, N::Int)::Vector{HOPPLLiteral}
+    evaluator = Evaluator(program), sampler
+    res = Vector{HOPPLLiteral}(undef, N)
+    for i in 1:N
+        reset!(evaluator)
+        r = evaluate(evaluator)
+        res[i] = r
+    end
+    return res
+end
 
 function evaluate(e::Evaluator)::Union{HOPPLLiteral, Distribution}
     while true
