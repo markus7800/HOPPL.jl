@@ -92,11 +92,10 @@ function linearize(exp::Variable, linear::LinearHOPPL)
     add!(linear, Literal(exp))
 end
 
-# variable scoping
 
 mutable struct Varbinding <: LinearHOPPLExpression
     v::Variable
-    prev_value::Union{Missing, HOPPLExpression} # set at evaluation
+    # prev_value::Union{Missing, HOPPLExpression} # set at evaluation
     function Varbinding(v::Variable)
         this = new()
         this.v = v

@@ -5,8 +5,8 @@ mutable struct Bernoulli <: Distribution
 end
 
 function Bernoulli(args::Vector{T}) where T <: HOPPLExpression
-    @assert length(args) == 1 "Invalid number of arguments in Bernoulli." args
-    @assert args[1] isa FloatLiteral "Invalid argument in Bernoulli." args
+    @assert length(args) == 1 "Invalid number of arguments in Bernoulli. $args"
+    @assert args[1] isa FloatLiteral "Invalid argument in Bernoulli. $(args[1]) $(typeof(args[1]))" 
     return Bernoulli(args[1].f)
 end
 

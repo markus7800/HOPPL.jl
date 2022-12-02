@@ -22,6 +22,10 @@ function next_var!(gs::GenSym)::Variable
     return Variable(sprint(show, gs.address))
 end
 
+function next_str!(gs::GenSym)::String
+    gs.address += 1
+    return string(gs.address)
+end
 
 struct Compiler
     desugar::Bool
