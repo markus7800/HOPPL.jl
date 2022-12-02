@@ -40,23 +40,31 @@ e = Evaluator(linear_program, ForwardSampler());
 reset!(e); Random.seed!(4); evaluate(e)
 
 
-#=
-geometric Variable[p, i]:
-LinearHOPPL
-1. CALL bernoulli: p 
-2. BIND 0x0003
-3. SAMPLE 0x0003 at 'b'
-4. UNBIND 0x0003
-5. BIND b
-6. BRANCH b: 7 - 9
-7. VARIABLE i
-8. ENDBRANCH 14
-9. CALL +: i 1 
-10. BIND 0x0004
-11. CALL geometric: p 0x0004 
-12. UNBIND 0x0004
-13. ENDBRANCH 14
-14. UNBIND b
-=#
-
 # todo fibonacci
+
+fib = """
+(defn fib [n]
+    (if (<= n 2) 1 
+        (+
+            (fib (- n 1))
+            (fib (- n 2))
+        )
+    )
+)
+(fib 10)
+""";
+
+program = compile_hoppl_program(fib)
+linear_program = LinearHOPPLProgram(program)
+e = Evaluator(linear_program, ForwardSampler());
+reset!(e); evaluate(e)
+
+
+#=
+(let [
+    x 1
+    f (fn [y] (+ x y)) # LambdaLiteral which has scope info and lineinfo
+]
+(f 2)
+)
+=#

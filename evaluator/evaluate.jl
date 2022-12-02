@@ -83,7 +83,7 @@ function evaluate(e::Evaluator)::Union{HOPPLLiteral, Distribution}
         if e.current_line > length(proc)
             # end of procedure reached
             call = pop!(e.call_stack)
-            println("End of scope $(call.id) reached.")
+            # println("End of scope $(call.id) reached.")
             if call.proc == "main"
                 # end of program reached
                 break
@@ -98,7 +98,7 @@ function evaluate(e::Evaluator)::Union{HOPPLLiteral, Distribution}
             end
         else
             line = proc[e.current_line]
-            println("Scope $scope ", e.current_proc, " ", e.current_line, ": ", line)
+            # println("Scope $scope ", e.current_proc, " ", e.current_line, ": ", line)
             instruction, next_proc, next_line = evaluate(e, line)
             e.current_line = next_line
             e.current_proc = next_proc
@@ -130,7 +130,7 @@ function evaluate(e::Evaluator, i::Literal)::Tuple{Symbol, String, Int}
     else
         e.ret = i.l
     end
-    println("return ", i.l, " ", scope, ": ", e.ret)
+    # println("return ", i.l, " ", scope, ": ", e.ret)
     return :continue, e.current_proc, e.current_line+1
 end
 
@@ -138,14 +138,14 @@ function evaluate(e::Evaluator, i::Varbinding)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
     # i.prev_value = get(e.env, i.v, scope, missing)
     e.env[i.v, scope] = e.ret
-    println("bind ", i.v, " ", scope, ": ", e.ret)
+    # println("bind ", i.v, " ", scope, ": ", e.ret)
     return :continue, e.current_proc, e.current_line+1
 end
 
 function evaluate(e::Evaluator, i::Unbinding)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
     # prev_value = i.binding.prev_value
-    println("unbind ", i.binding.v, " ", scope)
+    # println("unbind ", i.binding.v, " ", scope)
     delete!(e.env, i.binding.v, scope)
     # if ismissing(prev_value)
     #     delete!(e.env, i.binding.v, scope)
@@ -199,7 +199,7 @@ function evaluate(e::Evaluator, i::Call)::Tuple{Symbol, String, Int}
     elseif haskey(e.program.procs, i.head.name)
         next_entry = CallStackEntry(next_str!(e.stack_gs), i.head.name, e.current_proc, e.current_line)
         next_scope = next_entry.id
-        println("New scope $(next_entry.id).")
+        # println("New scope $(next_entry.id).")
 
         proc_args = e.program.proc_args[i.head.name]
         # i.prev_values = Dict{Variable, Union{HOPPLLiteral, Missing}}()

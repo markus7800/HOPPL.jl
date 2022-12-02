@@ -115,7 +115,7 @@ loop_helper = compile_hoppl(Compiler(true), parse_hoppl(loop_helper_code))
 
 function compile_hoppl_program(c::Compiler, p::ParserNode)::Program
     procs = Vector{FunctionDeclaration}()
-    push!(procs, loop_helper)
+    # push!(procs, loop_helper)
     for child in p.children[1:end-1]
         proc = compile_hoppl(c, child)
         @assert proc isa FunctionDeclaration
