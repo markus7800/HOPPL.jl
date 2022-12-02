@@ -115,6 +115,7 @@ function compile_hoppl_program(c::Compiler, p::ParserNode)::Program
     for child in p.children[1:end-1]
         proc = compile_hoppl(c, child)
         @assert proc isa FunctionDeclaration
+        @assert proc.name != "main" # reserved
         push!(procs, proc)
     end
     main = compile_hoppl(c, p.children[end])

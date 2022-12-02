@@ -12,5 +12,21 @@ z)
 program = compile_hoppl_program(s)
 
 include("evaluator/linearize.jl")
+include("distributions/distributions.jl")
+include("evaluator/evaluate.jl")
 
-LinearHOPPLProgram(program)
+linear_program = LinearHOPPLProgram(program)
+
+e = Evaluator(linear_program, ForwardSampler());
+reset!(e); evaluate(e)
+
+
+geometric = """
+(defn geometric [p]
+    (let [b (sample (bernoulli p))]
+        (if b 1 (geometric p))
+    )
+)
+
+
+"""

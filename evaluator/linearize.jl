@@ -28,6 +28,14 @@ function next_linenumber(linear::LinearHOPPL)::Int
     return length(linear.program) + 1
 end
 
+function Base.length(linear::LinearHOPPL)::Int
+    return length(linear.program)
+end
+
+function Base.getindex(linear::LinearHOPPL, i::Int)::LinearHOPPLExpression
+    return linear.program[i]
+end
+
 struct LinearHOPPLProgram
     procs::Dict{String, LinearHOPPL}
     proc_args::Dict{String, Vector{Variable}}
@@ -88,7 +96,7 @@ end
 
 mutable struct Varbinding <: LinearHOPPLExpression
     v::Variable
-    prev_value::HOPPLExpression # set at evaluation
+    prev_value::Union{Missing, HOPPLExpression} # set at evaluation
     function Varbinding(v::Variable)
         this = new()
         this.v = v
@@ -166,10 +174,17 @@ end
 mutable struct Call <: LinearHOPPLExpression
     head::Variable
     args::Vector{VarOrLit}
+    prev_values::Dict{Variable, Union{HOPPLLiteral, Missing}} # set at evaluation
+    function Call(head::Variable, args::Vector{VarOrLit})
+        this = new()
+        this.head = head
+        this.args = args
+        return this
+    end
 end
 
 function Base.show(io::IO, exp::Call)
-    print(io, "Call ", exp.head, ": ")
+    print(io, "CALL ", exp.head, ": ")
     for arg in exp.args
         print(io, arg, " ")
     end
@@ -193,7 +208,7 @@ function linearize(exp::FunctionCall, linear::LinearHOPPL)
                 end
             end
         else
-            add!(linear, Call(exp.head, exp.args))
+            add!(linear, Call(exp.head, Vector{VarOrLit}(exp.args)))
         end
     end
 end
@@ -217,7 +232,7 @@ end
 
 
 mutable struct Sample <: LinearHOPPLExpression
-    address::VarOrLit
+    address::Union{Variable, StringLiteral}
     dist::Variable
 end
 
@@ -240,7 +255,7 @@ function linearize(exp::SampleStatement, linear::LinearHOPPL)
 end
 
 mutable struct Observe <: LinearHOPPLExpression
-    address::VarOrLit
+    address::Union{Variable, StringLiteral}
     dist::Variable
     observation::VarOrLit
 end
