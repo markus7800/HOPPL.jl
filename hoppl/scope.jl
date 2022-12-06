@@ -204,7 +204,7 @@ function scope_program(p::Program)::Program
             # @assert !(body_arg.name in procedure_names[i:end]) # forbid recursion
             @assert isnothing(match(r"0x\d+", body_arg.name)) # should not contain addresses
             @assert !(body_arg.name in PRIMITIVES)
-            if body_arg.name == funcdef.name
+            if body_arg.name in procedure_names
                 body = scope(body_arg, 1, body)
             else
                 body = scope(body_arg, 0, body)

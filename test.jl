@@ -46,6 +46,34 @@ r = to_julia.(r)
 mean(r)
 (1 - 0.2) / 0.2
 
+infer_geometric = """
+(defn geometric [p i]
+    (let [b (sample 'b' (bernoulli p))]
+        (if b i (geometric p (+ i 1)))
+    )
+)
+(defn observe-geom [n v p ys]
+    (let [y (get ys n)] 
+        (observe (+ 'y' n) (geometric p 0) y)
+        0
+    )
+)
+(let [
+    ys [9 0 0 6 1 4 2 1 1 0]
+    p (sample 'p' (beta 1.0 1.0))
+]
+(loop 10 0 observe-geom p ys)
+p
+)
+
+""";
+
+ys = [9, 0, 0, 6, 1, 4, 2, 1, 1, 0]
+
+program = compile_hoppl_program(infer_geometric)
+
+r = infer(program, ForwardSampler(), 10)
+
 
 fib = """
 (defn fib [n]

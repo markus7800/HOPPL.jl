@@ -1,3 +1,5 @@
+import Distributions
+
 abstract type Distribution end
 
 mutable struct Bernoulli <: Distribution
@@ -67,15 +69,55 @@ function n_param(d::Normal)::Int
     return 2
 end
 
+
+mutable struct Beta <: Distribution
+    α::Float64
+    β::Float64
+end
+
+function Beta(args::Vector{T}) where T <: HOPPLExpression
+    @assert length(args) == 2 "Invalid number of arguments in Beta." args
+    @assert args[1] isa FloatLiteral "Invalid argument in Beta." args
+    @assert args[2] isa FloatLiteral "Invalid argument in Beta." args
+    return Beta(args[1].f, args[2].f)
+end
+
+function sample(d::Beta)::FloatLiteral
+    return FloatLiteral(rand(Distributions.Beta(d.α, d.β)))
+end
+
+function logprob(d::Beta, x::FloatLiteral)::Float64
+    return Distributions.logpdf(Distributions.Beta(d.α, d.β), x.f)
+end
+
+function ∇logprob!(d::Beta, x::FloatLiteral, ∇::AbstractVector{Float64})
+    error("Not implemented!")
+end
+
+function update!(d::Beta, ∇::AbstractVector{Float64})
+    d.α += ∇[1]
+    d.α = max(d.α, 1e-5)
+    d.β += ∇[2]
+    d.β = max(d.β, 1e-5)
+end
+
+function n_param(d::Beta)::Int
+    return 2
+end
+
 function dist_from(name::String, args::Vector{T})::Distribution where T <: HOPPLExpression
     if name == "bernoulli"
         return Bernoulli(args)
     elseif name == "normal"
         return Normal(args)
+    elseif name == "beta"
+        return Beta(args)
     else
         error("Unkown distribution $name.")
     end
 end
+
+
 
 function dist_from_funccall(s::FunctionCall)::Distribution
     @assert s.head isa Variable

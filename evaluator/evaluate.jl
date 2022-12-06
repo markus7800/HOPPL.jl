@@ -76,7 +76,7 @@ function infer(program::Program, sampler::Sampler, N::Int)::Vector{HOPPLLiteral}
 end
 
 function infer(program::LinearHOPPLProgram, sampler::Sampler, N::Int)::Vector{HOPPLLiteral}
-    evaluator = Evaluator(program), sampler
+    evaluator = Evaluator(program, sampler)
     res = Vector{HOPPLLiteral}(undef, N)
     for i in 1:N
         reset!(evaluator)
@@ -114,14 +114,19 @@ function evaluate(e::Evaluator)::Union{HOPPLLiteral, Distribution}
         else
             line = proc[e.current_line]
             # println("Scope $scope ", e.current_proc, " ", e.current_line, ": ", line)
-            instruction, next_proc, next_line = evaluate(e, line)
-            e.current_line = next_line
-            e.current_proc = next_proc
+            try
+                instruction, next_proc, next_line = evaluate(e, line)
+                e.current_line = next_line
+                e.current_proc = next_proc
 
-            if instruction == :continue
-                # continue evaluation
-            elseif instruction == :interrupt
-                break
+                if instruction == :continue
+                    # continue evaluation
+                elseif instruction == :interrupt
+                    break
+                end
+            catch e
+                println(line)
+                rethrow()
             end
         end
     end
@@ -138,20 +143,28 @@ function reset!(e::Evaluator)
     empty!(e.env.var_bindings)
 end
 
+function to_literal(e::Evaluator, scope::String, v::Variable)
+    return e.env[v, scope]
+end
+
+function to_literal(e::Evaluator, scope::String, vl::VectorLiteral)
+    return VectorLiteral([to_literal(e, scope, el) for el in vl.v])
+end
+
+function to_literal(e::Evaluator, scope::String, v::HOPPLExpression)
+    return v
+end
+
+
 function evaluate(e::Evaluator, i::Literal)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
-    if i.l isa Variable
-        e.ret = e.env[i.l, scope]
-    else
-        e.ret = i.l
-    end
+    e.ret = to_literal(e, scope, i.l)
     # println("return ", i.l, " ", scope, ": ", e.ret)
     return :continue, e.current_proc, e.current_line+1
 end
 
 function evaluate(e::Evaluator, i::Varbinding)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
-    # i.prev_value = get(e.env, i.v, scope, missing)
     e.env[i.v, scope] = e.ret
     # println("bind ", i.v, " ", scope, ": ", e.ret)
     return :continue, e.current_proc, e.current_line+1
@@ -159,23 +172,15 @@ end
 
 function evaluate(e::Evaluator, i::Unbinding)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
-    # prev_value = i.binding.prev_value
     # println("unbind ", i.binding.v, " ", scope)
     delete!(e.env, i.binding.v, scope)
-    # if ismissing(prev_value)
-    #     delete!(e.env, i.binding.v, scope)
-    # else
-    #     e.env[i.binding.v, scope] = prev_value
-    # end
     return :continue, e.current_proc, e.current_line+1
 end
 
 function evaluate(e::Evaluator, i::Branching)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
-    v = i.v
-    if i.v isa Variable
-        v = e.env[i.v, scope]
-    end
+    
+    v = to_literal(e, scope, i.v)
 
     if v isa BoolLiteral && v.b
         return :continue, e.current_proc, i.holds
@@ -194,16 +199,15 @@ function evaluate(e::Evaluator, i::Call)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
     cs = HOPPLLiteral[]
     for arg in i.args
-        if arg isa Variable
-            c = e.env[arg, scope]
-        else
-            c = arg
-        end
+        # println(arg)
+        c = to_literal(e, scope, arg)
+        # println("c: ", c)
         push!(cs, c)
     end
 
     if i.head.name in PROCS
         func = PROC2FUNC[i.head.name]
+        # println(cs)
         e.ret = func(cs...)
         return :continue, e.current_proc, e.current_line+1
 
@@ -217,9 +221,7 @@ function evaluate(e::Evaluator, i::Call)::Tuple{Symbol, String, Int}
         # println("New scope $(next_entry.id).")
 
         proc_args = e.program.proc_args[i.head.name]
-        # i.prev_values = Dict{Variable, Union{HOPPLLiteral, Missing}}()
         for (v, c) in zip(proc_args, cs)
-            # i.prev_values[v] = get(e.env, v, scope, missing)
             e.env[v, next_scope] = c
         end
         push!(e.call_stack, next_entry)
@@ -233,11 +235,7 @@ end
 function evaluate(e::Evaluator, i::Sample)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
     d = e.env[i.dist, scope]
-    if i.address isa Variable
-        address = e.env[i.address, scope]
-    else
-        address = i.address
-    end
+    address = to_literal(e, scope, i.address)
 
     value, instruction = sample(e.sampler, address.s, d)
     e.ret = value
@@ -248,16 +246,8 @@ end
 function evaluate(e::Evaluator, i::Observe)::Tuple{Symbol, String, Int}
     scope = e.call_stack[end].id
     d = e.env[i.dist, scope]
-    if i.address isa Variable
-        address = e.env[i.address, scope]
-    else
-        address = i.address
-    end
-    if i.observation isa Variable
-        observation = e.env[i.observation, scope]
-    else
-        observation = i.observation
-    end
+    address = to_literal(e, scope, i.address)
+    observation = to_literal(e, scope, i.observation)
 
     value, instruction = observe(e.sampler, address.s, d, observation)
     e.ret = value

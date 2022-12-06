@@ -5,6 +5,8 @@ add(l::IntLiteral, r::FloatLiteral)::FloatLiteral = FloatLiteral(l.i + r.f)
 add(l::FloatLiteral, r::IntLiteral)::FloatLiteral = add(r, l)
 add(l::FloatLiteral, r::FloatLiteral)::FloatLiteral = FloatLiteral(l.f + r.f)
 
+add(l::StringLiteral, r::IntLiteral)::StringLiteral = StringLiteral(l.s * string(r.i))
+
 minus(l::IntLiteral, r::IntLiteral)::IntLiteral = IntLiteral(l.i - r.i)
 minus(l::IntLiteral, r::FloatLiteral)::FloatLiteral = FloatLiteral(l.i - r.f)
 minus(l::FloatLiteral, r::IntLiteral)::FloatLiteral = FloatLiteral(l.f - r.i)

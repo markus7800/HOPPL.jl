@@ -2,7 +2,8 @@
 
 const DISTRIBUTIONS = String[
     "bernoulli",
-    "normal"
+    "normal",
+    "beta",
 ]
 
 const PROCS = String[
