@@ -127,9 +127,9 @@ end
 
 # resolve if statements before, remove redundant x~Variable
 function sample(s::FunctionCall)::HOPPLExpression
-    return sample(from_funccall(s))
+    return sample(dist_from_funccall(s))
 end
 
 function logprob(s::FunctionCall, x::HOPPLExpression)::Float64
-    return logprob(from_funccall(s), x)
+    return logprob(dist_from_funccall(s), x)
 end
