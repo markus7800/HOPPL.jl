@@ -1,6 +1,10 @@
 using Random
 using Statistics
+import Distributions
 include("hoppl/hoppl.jl")
+include("evaluator/linearize.jl")
+include("distributions/distributions.jl")
+include("evaluator/evaluate.jl")
 
 s = """(let [z (sample 'z' (bernoulli 0.5))
 mu (if (= z 0) -1.0 1.0)
@@ -13,9 +17,6 @@ z)
 
 program = compile_hoppl_program(s)
 
-include("evaluator/linearize.jl")
-include("distributions/distributions.jl")
-include("evaluator/evaluate.jl")
 
 linear_program = LinearHOPPLProgram(program)
 
@@ -46,6 +47,14 @@ r = to_julia.(r)
 mean(r)
 (1 - 0.2) / 0.2
 
+
+p = 0.2
+Random.seed!(0)
+ys = rand(Distributions.Geometric(p), 10)
+
+posterior = Distributions.Beta(1 + length(ys), 1 + sum(ys))
+mean(posterior)
+
 infer_geometric = """
 (defn geometric [p i]
     (let [b (sample 'b' (bernoulli p))]
@@ -59,7 +68,7 @@ infer_geometric = """
     )
 )
 (let [
-    ys [9 0 0 6 1 4 2 1 1 0]
+    ys [$(join(ys, " "))]
     p (sample 'p' (beta 1.0 1.0))
 ]
 (loop 10 0 observe-geom p ys)
@@ -67,12 +76,13 @@ p
 )
 
 """;
-
-ys = [9, 0, 0, 6, 1, 4, 2, 1, 1, 0]
-
 program = compile_hoppl_program(infer_geometric)
 
-r = infer(program, ForwardSampler(), 10)
+Random.seed!(0)
+r = infer(program, ForwardSampler(), 1000)
+
+Random.seed!(0)
+r, lp = infer(program, IS(), 1000)
 
 
 fib = """

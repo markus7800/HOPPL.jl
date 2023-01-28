@@ -1,8 +1,5 @@
 abstract type Sampler end
 
-# mutable struct IS <: Sampler
-# end
-
 mutable struct ForwardSampler <: Sampler
 end
 
@@ -88,9 +85,9 @@ end
 
 function evaluate(e::Evaluator)::Union{HOPPLLiteral, Distribution}
     while true
-        if length(e.call_stack) >= 1000
-            error("Recursion limit.")
-        end
+        # if length(e.call_stack) >= 1000
+        #     error("Recursion limit.")
+        # end
 
         proc = e.current_proc == "main" ? e.program.main : e.program.procs[e.current_proc]
         scope = e.call_stack[end].id
